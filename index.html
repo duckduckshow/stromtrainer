@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Physik Quiz – Stromkreis & Blitze</title>
+<title>Physik Quiz – Stromkreis & Blitze (mit Symbol-Bildern)</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
@@ -13,10 +13,32 @@ body { margin: 0; background: #f4f4f4; display: flex; justify-content: center; }
   margin: 12px; padding: 12px; border-radius: 8px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
-h1 { text-align: center; font-size: 18px; }
+h1 { text-align: center; font-size: 18px; margin: 6px 0 10px; }
 .score { text-align: right; font-size: 12px; color: #555; }
-.category { font-weight: bold; font-size: 12px; margin-bottom: 4px; }
-.question { font-weight: 600; margin-bottom: 6px; }
+.category { font-weight: bold; font-size: 12px; margin-bottom: 4px; color:#444; }
+.question { font-weight: 650; margin-bottom: 6px; }
+
+.symbolWrap{
+  display:none;
+  margin: 10px 0 8px;
+  padding: 10px;
+  background:#fff;
+  border: 1px solid #e6e6e6;
+  border-radius: 8px;
+}
+.symbolWrap .label{
+  font-size:12px;
+  color:#555;
+  margin-bottom:6px;
+}
+#symbolImg{
+  display:block;
+  max-width: 260px;
+  width: 100%;
+  height: auto;
+  border-radius: 6px;
+}
+
 .answers { display: grid; gap: 6px; margin-top: 6px; }
 .answer {
   border: 1px solid #ccc; border-radius: 6px;
@@ -25,9 +47,10 @@ h1 { text-align: center; font-size: 18px; }
 .answer:hover { background:#f0f0f0; }
 .answer.correct { background: #d4edda; border-color: #28a745; }
 .answer.wrong { background: #f8d7da; border-color: #dc3545; }
-.answer.disabled { pointer-events: none; }
+.answer.disabled { pointer-events: none; opacity:0.98; }
+
 .feedback { margin-top: 6px; font-weight: bold; min-height:18px; }
-.controls { margin-top: 10px; display: flex; justify-content: space-between; font-size: 12px; }
+.controls { margin-top: 10px; display: flex; justify-content: space-between; font-size: 12px; align-items:center; gap:8px; flex-wrap:wrap; }
 button { padding: 6px 10px; border: none; border-radius: 6px; background: #007bff; color: white; cursor: pointer; }
 button:hover { background: #0062cc; }
 </style>
@@ -35,82 +58,170 @@ button:hover { background: #0062cc; }
 
 <body>
 <div class="app">
-<h1>Physik Quiz – Stromkreis & Blitze</h1>
-<div class="score" id="score">Punkte: 0</div>
+  <h1>Physik Quiz – Stromkreis & Blitze</h1>
+  <div class="score" id="score">Punkte: 0</div>
 
-<div class="category" id="category"></div>
-<div class="question" id="question"></div>
+  <div class="category" id="category"></div>
+  <div class="question" id="question"></div>
 
-<div class="answers" id="answers"></div>
-<div class="feedback" id="feedback"></div>
+  <div class="symbolWrap" id="symbolWrap">
+    <div class="label" id="symbolLabel">Symbol</div>
+    <img id="symbolImg" alt="Schaltzeichen">
+  </div>
 
-<div class="controls">
-  <div id="progress"></div>
-  <button onclick="next()">Nächste Frage</button>
-</div>
+  <div class="answers" id="answers"></div>
+  <div class="feedback" id="feedback"></div>
+
+  <div class="controls">
+    <div id="progress"></div>
+    <button onclick="next()">Nächste Frage</button>
+  </div>
 </div>
 
 <script>
+/* =========================
+   SVG-Symbole als Data-URI
+   (schwarz-weiß, klar, schulheft-tauglich)
+========================= */
+function svgData(svg){
+  return "data:image/svg+xml;utf8," + encodeURIComponent(svg.trim());
+}
+
+const SYMBOLS = {
+  battery: svgData(`
+    <svg xmlns="http://www.w3.org/2000/svg" width="360" height="140" viewBox="0 0 360 140">
+      <rect width="360" height="140" fill="white"/>
+      <!-- wire -->
+      <line x1="20" y1="70" x2="120" y2="70" stroke="#111" stroke-width="6" stroke-linecap="round"/>
+      <line x1="240" y1="70" x2="340" y2="70" stroke="#111" stroke-width="6" stroke-linecap="round"/>
+      <!-- battery plates -->
+      <line x1="140" y1="35" x2="140" y2="105" stroke="#111" stroke-width="6"/>
+      <line x1="170" y1="20" x2="170" y2="120" stroke="#111" stroke-width="10"/>
+      <line x1="220" y1="35" x2="220" y2="105" stroke="#111" stroke-width="6"/>
+      <line x1="190" y1="20" x2="190" y2="120" stroke="#111" stroke-width="10"/>
+      <!-- plus/minus -->
+      <text x="145" y="18" font-size="18" font-family="system-ui" fill="#111">+</text>
+      <text x="216" y="18" font-size="18" font-family="system-ui" fill="#111">−</text>
+    </svg>
+  `),
+
+  lamp: svgData(`
+    <svg xmlns="http://www.w3.org/2000/svg" width="360" height="140" viewBox="0 0 360 140">
+      <rect width="360" height="140" fill="white"/>
+      <!-- wire -->
+      <line x1="20" y1="70" x2="120" y2="70" stroke="#111" stroke-width="6" stroke-linecap="round"/>
+      <line x1="240" y1="70" x2="340" y2="70" stroke="#111" stroke-width="6" stroke-linecap="round"/>
+      <!-- bulb circle -->
+      <circle cx="180" cy="70" r="38" fill="none" stroke="#111" stroke-width="6"/>
+      <!-- filament cross -->
+      <line x1="155" y1="45" x2="205" y2="95" stroke="#111" stroke-width="6" stroke-linecap="round"/>
+      <line x1="205" y1="45" x2="155" y2="95" stroke="#111" stroke-width="6" stroke-linecap="round"/>
+    </svg>
+  `),
+
+  wire: svgData(`
+    <svg xmlns="http://www.w3.org/2000/svg" width="360" height="140" viewBox="0 0 360 140">
+      <rect width="360" height="140" fill="white"/>
+      <line x1="30" y1="70" x2="330" y2="70" stroke="#111" stroke-width="8" stroke-linecap="round"/>
+    </svg>
+  `),
+
+  openSwitch: svgData(`
+    <svg xmlns="http://www.w3.org/2000/svg" width="360" height="140" viewBox="0 0 360 140">
+      <rect width="360" height="140" fill="white"/>
+      <!-- left wire -->
+      <line x1="30" y1="70" x2="140" y2="70" stroke="#111" stroke-width="6" stroke-linecap="round"/>
+      <!-- right wire -->
+      <line x1="230" y1="70" x2="330" y2="70" stroke="#111" stroke-width="6" stroke-linecap="round"/>
+      <!-- contacts -->
+      <circle cx="150" cy="70" r="7" fill="#111"/>
+      <circle cx="220" cy="70" r="7" fill="#111"/>
+      <!-- lever (open) -->
+      <line x1="150" y1="70" x2="215" y2="35" stroke="#111" stroke-width="6" stroke-linecap="round"/>
+    </svg>
+  `),
+
+  closedSwitch: svgData(`
+    <svg xmlns="http://www.w3.org/2000/svg" width="360" height="140" viewBox="0 0 360 140">
+      <rect width="360" height="140" fill="white"/>
+      <!-- left wire -->
+      <line x1="30" y1="70" x2="140" y2="70" stroke="#111" stroke-width="6" stroke-linecap="round"/>
+      <!-- right wire -->
+      <line x1="220" y1="70" x2="330" y2="70" stroke="#111" stroke-width="6" stroke-linecap="round"/>
+      <!-- contacts -->
+      <circle cx="150" cy="70" r="7" fill="#111"/>
+      <circle cx="220" cy="70" r="7" fill="#111"/>
+      <!-- lever (closed) -->
+      <line x1="150" y1="70" x2="220" y2="70" stroke="#111" stroke-width="6" stroke-linecap="round"/>
+    </svg>
+  `),
+
+  resistor: svgData(`
+    <svg xmlns="http://www.w3.org/2000/svg" width="360" height="140" viewBox="0 0 360 140">
+      <rect width="360" height="140" fill="white"/>
+      <!-- wires -->
+      <line x1="20" y1="70" x2="120" y2="70" stroke="#111" stroke-width="6" stroke-linecap="round"/>
+      <line x1="240" y1="70" x2="340" y2="70" stroke="#111" stroke-width="6" stroke-linecap="round"/>
+      <!-- resistor rectangle -->
+      <rect x="120" y="45" width="120" height="50" fill="none" stroke="#111" stroke-width="6" rx="6"/>
+    </svg>
+  `)
+};
+
+/* =========================
+   40 Fragen (mit Bildern bei Symbol-Fragen)
+========================= */
 const questions = [
 
-/* ================= SYMBOL & BEGRIFFE ================= */
-
+/* ===== Begriffe (ohne Bild) ===== */
 {cat:"Stromkreis – Begriffe",q:"Was ist eine Spannungsquelle?",a:["Etwas, das Strom antreibt","Ein Kabel","Eine Lampe","Ein Schalter"],c:0},
 {cat:"Stromkreis – Begriffe",q:"Was ist ein Verbraucher?",a:["Ein Gerät, das Strom nutzt","Eine Batterie","Ein Draht","Eine Steckdose"],c:0},
 {cat:"Stromkreis – Begriffe",q:"Was ist ein Leiter?",a:["Etwas, das Strom gut weiterleitet","Eine Lampe","Ein Akku","Ein Schalter"],c:0},
 {cat:"Stromkreis – Begriffe",q:"Was ist ein Schalter?",a:["Er öffnet oder schließt den Stromkreis","Er speichert Strom","Er misst Strom","Er erzeugt Strom"],c:0},
 
-/* ================= REALBEZUG ================= */
-
+/* ===== Beispiele (ohne Bild) ===== */
 {cat:"Stromkreis – Beispiele",q:"Was ist eine Spannungsquelle im Alltag?",a:["Batterie","Lampe","Computer","Kabel"],c:0},
 {cat:"Stromkreis – Beispiele",q:"Was ist ein Verbraucher?",a:["Lampe","Batterie","Steckdose","Blitzableiter"],c:0},
 {cat:"Stromkreis – Beispiele",q:"Was ist ein Leiter?",a:["Kabel","Glas","Holz","Luftballon"],c:0},
 {cat:"Stromkreis – Beispiele",q:"Ein Computer ist …",a:["ein Verbraucher","eine Spannungsquelle","ein Leiter","ein Schalter"],c:0},
 
-/* ================= SYMBOL-VERSTÄNDNIS ================= */
+/* ===== Symbol-Fragen (MIT BILD) ===== */
+{cat:"Symbole",q:"Welches Bauteil zeigt dieses Symbol?",img:SYMBOLS.battery,imgLabel:"Symbol: Batterie (Spannungsquelle)",a:["Spannungsquelle","Verbraucher","Leiter","Schalter"],c:0},
+{cat:"Symbole",q:"Welches Bauteil zeigt dieses Symbol?",img:SYMBOLS.lamp,imgLabel:"Symbol: Lampe",a:["Verbraucher","Leiter","Spannungsquelle","Sicherung"],c:0},
+{cat:"Symbole",q:"Welches Bauteil zeigt dieses Symbol?",img:SYMBOLS.wire,imgLabel:"Symbol: Leiter (Kabel)",a:["Leiter","Verbraucher","Blitz","Widerstand"],c:0},
+{cat:"Symbole",q:"Was bedeutet dieses Symbol?",img:SYMBOLS.openSwitch,imgLabel:"Symbol: Schalter (offen)",a:["Stromkreis unterbrochen","Strom fließt","Kurzschluss","Mehr Spannung"],c:0},
 
-{cat:"Symbole",q:"Was zeigt das Batteriesymbol im Stromkreis?",a:["Spannungsquelle","Verbraucher","Schalter","Widerstand"],c:0},
-{cat:"Symbole",q:"Was zeigt das Lampensymbol?",a:["Verbraucher","Leiter","Spannungsquelle","Sicherung"],c:0},
-{cat:"Symbole",q:"Was zeigt eine gerade Linie im Schaltplan?",a:["Leiter","Verbraucher","Blitz","Widerstand"],c:0},
-{cat:"Symbole",q:"Was bedeutet ein offener Schalter im Plan?",a:["Stromkreis unterbrochen","Strom fließt","Kurzschluss","Mehr Spannung"],c:0},
-
-/* ================= GRUNDLAGEN ================= */
-
+/* ===== Grundlagen ===== */
 {cat:"Grundlagen",q:"Wann fließt Strom?",a:["Wenn der Stromkreis geschlossen ist","Immer","Nur bei Regen","Nur bei Batterien"],c:0},
 {cat:"Grundlagen",q:"Was passiert bei einem offenen Stromkreis?",a:["Kein Strom fließt","Strom fließt stärker","Es blitzt","Lampe wird heller"],c:0},
 {cat:"Grundlagen",q:"Wofür braucht man Kabel?",a:["Damit Strom fließen kann","Damit Licht heller wird","Zum Speichern","Zum Erzeugen von Strom"],c:0},
 
-/* ================= SPANNUNG ================= */
-
+/* ===== Spannung ===== */
 {cat:"Spannung",q:"Was beschreibt die Spannung?",a:["Wie stark der Strom angetrieben wird","Wie heiß etwas ist","Wie viel Licht entsteht","Wie lang ein Kabel ist"],c:0},
 {cat:"Spannung",q:"Eine höhere Spannung bedeutet meist …",a:["mehr Antrieb für Strom","weniger Strom","kein Strom","kürzeres Kabel"],c:0},
 
-/* ================= STROMSTÄRKE ================= */
-
+/* ===== Stromstärke ===== */
 {cat:"Stromstärke",q:"Was ist Stromstärke?",a:["Wie viel Strom fließt","Wie groß die Batterie ist","Wie hell die Lampe ist","Wie lang das Kabel ist"],c:0},
 {cat:"Stromstärke",q:"Wenn mehr Strom fließt, spricht man von …",a:["größerer Stromstärke","mehr Widerstand","kleiner Spannung","offenem Kreis"],c:0},
 
-/* ================= WIDERSTAND ================= */
-
+/* ===== Widerstand (1 Symbol-Frage dazu) ===== */
 {cat:"Widerstand",q:"Was macht ein Widerstand?",a:["Er bremst den Strom","Er speichert Strom","Er erzeugt Strom","Er schaltet Strom aus"],c:0},
 {cat:"Widerstand",q:"Großer Widerstand bedeutet …",a:["weniger Strom","mehr Strom","mehr Spannung","offener Stromkreis"],c:0},
 {cat:"Widerstand",q:"Eine dünne Leitung hat meist …",a:["mehr Widerstand","weniger Widerstand","keinen Widerstand","mehr Spannung"],c:0},
+{cat:"Symbole",q:"Welches Bauteil zeigt dieses Symbol?",img:SYMBOLS.resistor,imgLabel:"Symbol: Widerstand",a:["Widerstand","Leiter","Lampe","Batterie"],c:0},
 
-/* ================= BLITZ – ENTSTEHUNG ================= */
-
+/* ===== Blitz – Entstehung ===== */
 {cat:"Blitz",q:"Wie entsteht ein Blitz?",a:["Durch starke elektrische Spannung in Wolken","Durch Wind","Durch Regen","Durch Sonne"],c:0},
 {cat:"Blitz",q:"Was ist ein Blitz?",a:["Ein sehr starker elektrischer Strom","Ein Licht","Ein Geräusch","Ein Windstoß"],c:0},
 {cat:"Blitz",q:"Warum sieht man den Blitz vor dem Donner?",a:["Licht ist schneller als Schall","Donner ist unsichtbar","Blitz ist langsamer","Wind schiebt ihn"],c:0},
 
-/* ================= BLITZ – SICHERHEIT ================= */
-
+/* ===== Blitz – Sicherheit ===== */
 {cat:"Blitz – Sicherheit",q:"Wo ist man bei Gewitter sicher?",a:["Im Haus","Unter einem Baum","Auf freiem Feld","Im Wasser"],c:0},
 {cat:"Blitz – Sicherheit",q:"Soll man bei Gewitter baden gehen?",a:["Nein","Ja","Nur kurz","Nur mit Gummischuhen"],c:0},
 {cat:"Blitz – Sicherheit",q:"Warum ist ein Baum gefährlich?",a:["Blitze schlagen oft dort ein","Er ist nass","Er ist hoch","Er wackelt"],c:0},
 {cat:"Blitz – Sicherheit",q:"Was schützt ein Blitzableiter?",a:["Gebäude","Menschen vor Regen","Autos","Wolken"],c:0},
 
-/* ================= MISCHFRAGEN ================= */
-
+/* ===== Mischfragen (mit 1 Bild: geschlossener Schalter) ===== */
 {cat:"Mischung",q:"Was braucht ein Stromkreis mindestens?",a:["Spannungsquelle und Verbraucher","Nur Kabel","Nur Schalter","Nur Widerstand"],c:0},
 {cat:"Mischung",q:"Eine Lampe leuchtet nicht. Warum?",a:["Stromkreis ist offen","Zu viel Licht","Zu wenig Glas","Zu viel Luft"],c:0},
 {cat:"Mischung",q:"Ein Akku ist eine …",a:["Spannungsquelle","Verbraucher","Leiter","Schalter"],c:0},
@@ -121,8 +232,13 @@ const questions = [
 {cat:"Mischung",q:"Warum braucht man Sicherungen?",a:["Zum Schutz vor zu viel Strom","Zum Speichern","Zum Erzeugen","Zum Blitzen"],c:0},
 {cat:"Mischung",q:"Welche Einheit gehört zur Stromstärke?",a:["Ampere","Volt","Meter","Sekunde"],c:0},
 {cat:"Mischung",q:"Welche Einheit gehört zur Spannung?",a:["Volt","Ampere","Ohm","Liter"],c:0},
+
+/* Bonus-Symbol (didaktisch gut): geschlossener Schalter = Strom kann fließen */
+{cat:"Symbole",q:"Was bedeutet dieses Symbol?",img:SYMBOLS.closedSwitch,imgLabel:"Symbol: Schalter (geschlossen)",a:["Stromkreis ist geschlossen","Stromkreis ist unterbrochen","Kurzschluss","Widerstand"],c:0},
 ];
 
+// Sicherheitscheck: exakt 40 Fragen
+// (Falls du später umsortierst, einfach prüfen: questions.length)
 let i = 0;
 let score = 0;
 let done = false;
@@ -134,6 +250,10 @@ const fEl = document.getElementById("feedback");
 const cEl = document.getElementById("category");
 const sEl = document.getElementById("score");
 const pEl = document.getElementById("progress");
+
+const symbolWrap = document.getElementById("symbolWrap");
+const symbolImg = document.getElementById("symbolImg");
+const symbolLabel = document.getElementById("symbolLabel");
 
 function shuffle(arr){
   for(let i=arr.length-1;i>0;i--){
@@ -147,6 +267,17 @@ function show(){
   const q = questions[i];
   cEl.textContent = "Thema: " + q.cat;
   qEl.textContent = q.q;
+
+  // Symbol anzeigen, wenn vorhanden
+  if(q.img){
+    symbolWrap.style.display = "block";
+    symbolImg.src = q.img;
+    symbolLabel.textContent = q.imgLabel || "Symbol";
+  } else {
+    symbolWrap.style.display = "none";
+    symbolImg.src = "";
+    symbolLabel.textContent = "Symbol";
+  }
 
   aEl.innerHTML = "";
   fEl.textContent = "";
@@ -199,3 +330,4 @@ show();
 </script>
 </body>
 </html>
+
