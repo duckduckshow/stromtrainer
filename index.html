@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Physik Quiz – Stromkreis & Blitze</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+* { box-sizing: border-box; font-family: system-ui, sans-serif; }
+body { margin: 0; background: #f4f4f4; display: flex; justify-content: center; }
+.app {
+  background: white; max-width: 900px; width: 100%;
+  margin: 12px; padding: 12px; border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+h1 { text-align: center; font-size: 18px; }
+.score { text-align: right; font-size: 12px; color: #555; }
+.category { font-weight: bold; font-size: 12px; margin-bottom: 4px; }
+.question { font-weight: 600; margin-bottom: 6px; }
+.answers { display: grid; gap: 6px; margin-top: 6px; }
+.answer {
+  border: 1px solid #ccc; border-radius: 6px;
+  padding: 8px; background: #fafafa; cursor: pointer;
+}
+.answer:hover { background:#f0f0f0; }
+.answer.correct { background: #d4edda; border-color: #28a745; }
+.answer.wrong { background: #f8d7da; border-color: #dc3545; }
+.answer.disabled { pointer-events: none; }
+.feedback { margin-top: 6px; font-weight: bold; min-height:18px; }
+.controls { margin-top: 10px; display: flex; justify-content: space-between; font-size: 12px; }
+button { padding: 6px 10px; border: none; border-radius: 6px; background: #007bff; color: white; cursor: pointer; }
+button:hover { background: #0062cc; }
+</style>
+</head>
+
+<body>
+<div class="app">
+<h1>Physik Quiz – Stromkreis & Blitze</h1>
+<div class="score" id="score">Punkte: 0</div>
+
+<div class="category" id="category"></div>
+<div class="question" id="question"></div>
+
+<div class="answers" id="answers"></div>
+<div class="feedback" id="feedback"></div>
+
+<div class="controls">
+  <div id="progress"></div>
+  <button onclick="next()">Nächste Frage</button>
+</div>
+</div>
+
+<script>
+const questions = [
+
+/* ================= SYMBOL & BEGRIFFE ================= */
+
+{cat:"Stromkreis – Begriffe",q:"Was ist eine Spannungsquelle?",a:["Etwas, das Strom antreibt","Ein Kabel","Eine Lampe","Ein Schalter"],c:0},
+{cat:"Stromkreis – Begriffe",q:"Was ist ein Verbraucher?",a:["Ein Gerät, das Strom nutzt","Eine Batterie","Ein Draht","Eine Steckdose"],c:0},
+{cat:"Stromkreis – Begriffe",q:"Was ist ein Leiter?",a:["Etwas, das Strom gut weiterleitet","Eine Lampe","Ein Akku","Ein Schalter"],c:0},
+{cat:"Stromkreis – Begriffe",q:"Was ist ein Schalter?",a:["Er öffnet oder schließt den Stromkreis","Er speichert Strom","Er misst Strom","Er erzeugt Strom"],c:0},
+
+/* ================= REALBEZUG ================= */
+
+{cat:"Stromkreis – Beispiele",q:"Was ist eine Spannungsquelle im Alltag?",a:["Batterie","Lampe","Computer","Kabel"],c:0},
+{cat:"Stromkreis – Beispiele",q:"Was ist ein Verbraucher?",a:["Lampe","Batterie","Steckdose","Blitzableiter"],c:0},
+{cat:"Stromkreis – Beispiele",q:"Was ist ein Leiter?",a:["Kabel","Glas","Holz","Luftballon"],c:0},
+{cat:"Stromkreis – Beispiele",q:"Ein Computer ist …",a:["ein Verbraucher","eine Spannungsquelle","ein Leiter","ein Schalter"],c:0},
+
+/* ================= SYMBOL-VERSTÄNDNIS ================= */
+
+{cat:"Symbole",q:"Was zeigt das Batteriesymbol im Stromkreis?",a:["Spannungsquelle","Verbraucher","Schalter","Widerstand"],c:0},
+{cat:"Symbole",q:"Was zeigt das Lampensymbol?",a:["Verbraucher","Leiter","Spannungsquelle","Sicherung"],c:0},
+{cat:"Symbole",q:"Was zeigt eine gerade Linie im Schaltplan?",a:["Leiter","Verbraucher","Blitz","Widerstand"],c:0},
+{cat:"Symbole",q:"Was bedeutet ein offener Schalter im Plan?",a:["Stromkreis unterbrochen","Strom fließt","Kurzschluss","Mehr Spannung"],c:0},
+
+/* ================= GRUNDLAGEN ================= */
+
+{cat:"Grundlagen",q:"Wann fließt Strom?",a:["Wenn der Stromkreis geschlossen ist","Immer","Nur bei Regen","Nur bei Batterien"],c:0},
+{cat:"Grundlagen",q:"Was passiert bei einem offenen Stromkreis?",a:["Kein Strom fließt","Strom fließt stärker","Es blitzt","Lampe wird heller"],c:0},
+{cat:"Grundlagen",q:"Wofür braucht man Kabel?",a:["Damit Strom fließen kann","Damit Licht heller wird","Zum Speichern","Zum Erzeugen von Strom"],c:0},
+
+/* ================= SPANNUNG ================= */
+
+{cat:"Spannung",q:"Was beschreibt die Spannung?",a:["Wie stark der Strom angetrieben wird","Wie heiß etwas ist","Wie viel Licht entsteht","Wie lang ein Kabel ist"],c:0},
+{cat:"Spannung",q:"Eine höhere Spannung bedeutet meist …",a:["mehr Antrieb für Strom","weniger Strom","kein Strom","kürzeres Kabel"],c:0},
+
+/* ================= STROMSTÄRKE ================= */
+
+{cat:"Stromstärke",q:"Was ist Stromstärke?",a:["Wie viel Strom fließt","Wie groß die Batterie ist","Wie hell die Lampe ist","Wie lang das Kabel ist"],c:0},
+{cat:"Stromstärke",q:"Wenn mehr Strom fließt, spricht man von …",a:["größerer Stromstärke","mehr Widerstand","kleiner Spannung","offenem Kreis"],c:0},
+
+/* ================= WIDERSTAND ================= */
+
+{cat:"Widerstand",q:"Was macht ein Widerstand?",a:["Er bremst den Strom","Er speichert Strom","Er erzeugt Strom","Er schaltet Strom aus"],c:0},
+{cat:"Widerstand",q:"Großer Widerstand bedeutet …",a:["weniger Strom","mehr Strom","mehr Spannung","offener Stromkreis"],c:0},
+{cat:"Widerstand",q:"Eine dünne Leitung hat meist …",a:["mehr Widerstand","weniger Widerstand","keinen Widerstand","mehr Spannung"],c:0},
+
+/* ================= BLITZ – ENTSTEHUNG ================= */
+
+{cat:"Blitz",q:"Wie entsteht ein Blitz?",a:["Durch starke elektrische Spannung in Wolken","Durch Wind","Durch Regen","Durch Sonne"],c:0},
+{cat:"Blitz",q:"Was ist ein Blitz?",a:["Ein sehr starker elektrischer Strom","Ein Licht","Ein Geräusch","Ein Windstoß"],c:0},
+{cat:"Blitz",q:"Warum sieht man den Blitz vor dem Donner?",a:["Licht ist schneller als Schall","Donner ist unsichtbar","Blitz ist langsamer","Wind schiebt ihn"],c:0},
+
+/* ================= BLITZ – SICHERHEIT ================= */
+
+{cat:"Blitz – Sicherheit",q:"Wo ist man bei Gewitter sicher?",a:["Im Haus","Unter einem Baum","Auf freiem Feld","Im Wasser"],c:0},
+{cat:"Blitz – Sicherheit",q:"Soll man bei Gewitter baden gehen?",a:["Nein","Ja","Nur kurz","Nur mit Gummischuhen"],c:0},
+{cat:"Blitz – Sicherheit",q:"Warum ist ein Baum gefährlich?",a:["Blitze schlagen oft dort ein","Er ist nass","Er ist hoch","Er wackelt"],c:0},
+{cat:"Blitz – Sicherheit",q:"Was schützt ein Blitzableiter?",a:["Gebäude","Menschen vor Regen","Autos","Wolken"],c:0},
+
+/* ================= MISCHFRAGEN ================= */
+
+{cat:"Mischung",q:"Was braucht ein Stromkreis mindestens?",a:["Spannungsquelle und Verbraucher","Nur Kabel","Nur Schalter","Nur Widerstand"],c:0},
+{cat:"Mischung",q:"Eine Lampe leuchtet nicht. Warum?",a:["Stromkreis ist offen","Zu viel Licht","Zu wenig Glas","Zu viel Luft"],c:0},
+{cat:"Mischung",q:"Ein Akku ist eine …",a:["Spannungsquelle","Verbraucher","Leiter","Schalter"],c:0},
+{cat:"Mischung",q:"Metall ist meist ein …",a:["guter Leiter","Verbraucher","Isolator","Blitz"],c:0},
+{cat:"Mischung",q:"Holz ist meist ein …",a:["schlechter Leiter","Spannungsquelle","Verbraucher","Blitz"],c:0},
+{cat:"Mischung",q:"Warum ist Strom gefährlich?",a:["Er kann durch den Körper fließen","Er ist laut","Er ist hell","Er ist warm"],c:0},
+{cat:"Mischung",q:"Was passiert bei Kurzschluss?",a:["Sehr viel Strom fließt","Kein Strom fließt","Weniger Spannung","Lampe wird dunkler"],c:0},
+{cat:"Mischung",q:"Warum braucht man Sicherungen?",a:["Zum Schutz vor zu viel Strom","Zum Speichern","Zum Erzeugen","Zum Blitzen"],c:0},
+{cat:"Mischung",q:"Welche Einheit gehört zur Stromstärke?",a:["Ampere","Volt","Meter","Sekunde"],c:0},
+{cat:"Mischung",q:"Welche Einheit gehört zur Spannung?",a:["Volt","Ampere","Ohm","Liter"],c:0},
+];
+
+let i = 0;
+let score = 0;
+let done = false;
+let currentCorrect = 0;
+
+const qEl = document.getElementById("question");
+const aEl = document.getElementById("answers");
+const fEl = document.getElementById("feedback");
+const cEl = document.getElementById("category");
+const sEl = document.getElementById("score");
+const pEl = document.getElementById("progress");
+
+function shuffle(arr){
+  for(let i=arr.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]]=[arr[j],arr[i]];
+  }
+  return arr;
+}
+
+function show(){
+  const q = questions[i];
+  cEl.textContent = "Thema: " + q.cat;
+  qEl.textContent = q.q;
+
+  aEl.innerHTML = "";
+  fEl.textContent = "";
+  done = false;
+
+  const order = shuffle([0,1,2,3]);
+  currentCorrect = order.indexOf(q.c);
+
+  order.forEach((orig, shown)=>{
+    const b = document.createElement("div");
+    b.className = "answer";
+    b.textContent = q.a[orig];
+    b.onclick = () => answer(shown, b);
+    aEl.appendChild(b);
+  });
+
+  pEl.textContent = `Frage ${i+1} von ${questions.length}`;
+}
+
+function answer(n,b){
+  if(done) return;
+  done = true;
+
+  [...aEl.children].forEach((x,j)=>{
+    x.classList.add("disabled");
+    if(j === currentCorrect) x.classList.add("correct");
+  });
+
+  if(n === currentCorrect){
+    score++;
+    sEl.textContent = "Punkte: " + score;
+    fEl.textContent = "Richtig!";
+  } else {
+    b.classList.add("wrong");
+    fEl.textContent = "Falsch.";
+  }
+}
+
+function next(){
+  i++;
+  if(i >= questions.length){
+    i = 0;
+    score = 0;
+    sEl.textContent = "Punkte: 0";
+  }
+  show();
+}
+
+show();
+</script>
+</body>
+</html>
